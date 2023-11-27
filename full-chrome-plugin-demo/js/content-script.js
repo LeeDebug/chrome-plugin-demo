@@ -102,6 +102,13 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse)
 		tip(JSON.stringify(request));
 		sendResponse('我收到你的消息了：'+JSON.stringify(request));
 	}
+	console.log('=-=-=-> 触发 tab 页的 onMessage 方法: ', 33333333333, request.action)
+    if (request.action === 'openPictures') {
+        downloadPictures('open');
+    }
+    if (request.action === 'downloadPictures') {
+        downloadPictures('download');
+    }
 });
 
 // 主动发送消息给后台
@@ -124,16 +131,16 @@ chrome.runtime.onConnect.addListener(function(port) {
 	}
 });
 
-window.addEventListener("message", function(e)
-{
-	console.log('收到消息：', e.data);
-	if(e.data && e.data.cmd == 'invoke') {
-		eval('('+e.data.code+')');
-	}
-	else if(e.data && e.data.cmd == 'message') {
-		tip(e.data.data);
-	}
-}, false);
+// window.addEventListener("message", function(e)
+// {
+// 	console.log('收到消息：', e.data);
+// 	if(e.data && e.data.cmd == 'invoke') {
+// 		eval('('+e.data.code+')');
+// 	}
+// 	else if(e.data && e.data.cmd == 'message') {
+// 		tip(e.data.data);
+// 	}
+// }, false);
 
 
 function initCustomEventListen() {
@@ -169,3 +176,154 @@ function tip(info) {
 		}, 400);
 	}, 3000);
 }
+
+/**
+ * TODO By Edan: 开发插件函数
+ */
+
+// 打开 picture 类型图片
+async function openPictures(pictures, operate) {
+    let count = 0
+    for (let i = 0; i < pictures.length; i++) {
+        const highSrc = pictures[i].getAttribute('data-highres-images')
+        console.log(i, highSrc)
+        await new Promise((resolve) => {
+            if(highSrc) {
+                // 有效图片计数器+1
+                count++
+                // 打开高清图片
+                setTimeout(() => {
+					if (operate === 'download') {
+						// 方法 1: 使用 chrome 插件的方法下载
+						// chrome.downloads.download({
+						// 	url: highSrc // 替换为你要下载的文件 URL
+						// 	// filename: 'downloaded_image.jpg', // 你可以自定义文件名
+						// 	// saveAs: false // 如果设为 true，则会弹出保存对话框
+						// });
+						// 方法 2: 创建 a 标签下载
+						// var link = document.createElement('a');
+						// link.href = highSrc;
+						// // 可以自定义文件名
+						// link.download = highSrc;
+						// // 模拟点击下载
+						// link.click();
+						// 方法 3: 使用 fetch 请求下载
+						downloadFunction(highSrc)
+					}
+					if (operate === 'open') window.open(highSrc)
+				}, 500)
+            }
+            resolve()
+        });
+    }
+    // 打印检测结果
+    setTimeout(() => {
+        alert(`共检测到 ${pictures.length} 张 picture 类型原始图片，最终成功打开 ${count} 张有效图片！`)
+    }, 1000)
+}
+
+// 下载某张图片
+function downloadFunction(imageUrl) {
+	// 发送 GET 请求获取图片数据
+	fetch(imageUrl)
+		.then(response => response.blob())
+		.then(blob => {
+			// 创建 Blob 对象
+			var blobUrl = URL.createObjectURL(blob);
+			console.log('=-=-=-> imageUrl: ', imageUrl)
+			console.log('=-=-=-> blobUrl: ', blobUrl)
+
+			// 创建下载链接
+			var link = document.createElement('a');
+			link.href = blobUrl;
+			link.download = `${extractString(imageUrl)}.png`; // 可以自定义文件名 'downloaded_image.jpg'
+
+			// 模拟点击下载
+			link.click();
+
+			// 释放 Blob 对象
+			URL.revokeObjectURL(blobUrl);
+		})
+		.catch(error => console.error('Error downloading image:', error));
+}
+
+// 获取文件名
+function extractString(inputString) {
+	// 查找最后一个 / 的位置
+	var lastSlashIndex = inputString.lastIndexOf('/');
+
+	// 查找第一个 ? 的位置
+	var firstQuestionMarkIndex = inputString.indexOf('?');
+
+	// 如果不存在 ?，或者 ? 在 / 后面，则取字符串的最后一个 / 之后的内容
+	if (firstQuestionMarkIndex === -1 || lastSlashIndex > firstQuestionMarkIndex) {
+		return inputString.substring(lastSlashIndex + 1);
+	}
+
+	// 否则，取字符串的最后一个 / 之后到第一个 ? 之前的内容
+	return inputString.substring(lastSlashIndex + 1, firstQuestionMarkIndex);
+}
+
+// 打开 img 类型的图片
+async function openImgs(pictures, operate) {
+    let count = 0
+    for (let i = 0; i < pictures.length; i++) {
+        const isHigh = pictures[i].getAttribute('importance')
+        console.log('isHigh: ', isHigh)
+        if (isHigh !== 'high') continue
+        const highSrc = pictures[i].getAttribute('src')
+        console.log('i: ', i, '; highSrc: ', highSrc)
+        await new Promise((resolve) => {
+            if(highSrc) {
+                // 有效图片计数器+1
+                count++
+                // 打开高清图片
+                setTimeout(() => {
+					if (operate === 'download') {
+						// 方法 3: 使用 fetch 请求下载
+						downloadFunction(highSrc.split('?')[0])
+					}
+					if (operate === 'open') window.open(highSrc.split('?')[0])
+				}, 500)
+            }
+            resolve()
+        });
+    }
+    // 打印检测结果
+    setTimeout(() => {
+        alert(`共检测到 ${pictures.length} 张 img 类型原始图片，最终成功打开 ${count} 张有效图片！`)
+    }, 1000)
+}
+
+async function downloadPictures(operate) {
+    // // 获取当前时间
+    // const currentDate = new Date();
+    // // 设置目标日期为 2023 年 11 月 30 日 23 点 59 分
+    // const targetDate = new Date('2023-11-30T23:59:00');
+    // if (currentDate >= targetDate) {
+    //     alert('使用结束，请使用正式版本！')
+    //     return false
+    // }
+
+    // 找 picture 类型的图片
+    let pictures = document.getElementsByTagName('picture')
+    if (pictures.length) {
+        await openPictures(pictures, operate)
+        return true
+    }
+
+    // 找 img 类型的图片
+    pictures = document.getElementsByTagName('img')
+    console.log(pictures)
+    if (pictures.length) {
+        await openImgs(pictures, operate)
+        return true
+    }
+
+    // 如果什么都没找到
+    alert('未找到有效图片，请更换 VPN 或联系技术开发人员！感谢使用！')
+    return false
+}
+
+// 正式执行流程
+// main()

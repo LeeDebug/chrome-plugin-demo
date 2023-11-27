@@ -220,3 +220,41 @@ $('#check_media').click(e => {
 	alert('即将打开一个有视频的网站，届时将自动检测是否存在视频！');
 	chrome.tabs.create({url: 'http://www.w3school.com.cn/tiy/t.asp?f=html5_video'});
 });
+
+
+/**
+ * TODO By Edan: 开发原图下载插件
+ */
+
+// 当 Download 按钮被点击时
+$('#openButton').click(() => {
+    console.log('=-=-=-> 触发 openButton 监听事件: ', 111111111)
+    chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+        console.log('=-=-=-> 查询 tab 页信息: ', 2222222222)
+        var activeTab = tabs[0];
+
+        // 方法 2: 向当前标签页发送消息，请求执行 openPictures 函数
+        chrome.tabs.sendMessage(activeTab.id, { action: 'openPictures' });
+    });
+});
+
+// 当 Download 按钮被点击时
+$('#downloadButton').click(() => {
+    console.log('=-=-=-> 触发 downloadButton 监听事件: ', 111111111)
+    chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+        console.log('=-=-=-> 查询 tab 页信息: ', 2222222222)
+        var activeTab = tabs[0];
+
+        // 测试 1: 修改背景色
+        // executeScriptToCurrentTab('document.body.style.backgroundColor="red";')
+
+        // 测试 2: 修改字体大小
+        // sendMessageToContentScript({cmd:'update_font_size', size: 42}, function(response){});
+
+        // 方法 1: 在当前标签页执行 JavaScript 代码
+        // chrome.tabs.executeScript(activeTab.id, { code: downloadPictures });
+
+        // 方法 2: 向当前标签页发送消息，请求执行 downloadPictures 函数
+        chrome.tabs.sendMessage(activeTab.id, { action: 'downloadPictures' });
+    });
+});

@@ -2,7 +2,7 @@
 	// 清单文件的版本，这个必须写，而且必须是2
 	"manifest_version": 2,
 	// 插件的名称
-	"name": "demo",
+	"name": "ralphlauren-auto-downloads",
 	// 插件的版本
 	"version": "1.0.0",
 	// 插件描述
@@ -59,6 +59,7 @@
 	// 权限申请
 	"permissions":
 	[
+		"downloads", // 下载权限
 		"contextMenus", // 右键菜单
 		"tabs", // 标签
 		"notifications", // 通知
